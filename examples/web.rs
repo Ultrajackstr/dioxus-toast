@@ -18,20 +18,10 @@ fn app(cx: Scope) -> Element {
     let toast = use_atom_ref(&cx, &TOAST_MANAGER);
 
     cx.render(rsx! {
-        dioxus_toast::ToastFrame {
-            manager: toast
-        }
+        dioxus_toast::ToastFrame { manager: toast }
         div {
             button {
                 onclick: move |_| {
-                    // let _id = toast.write().popup(ToastInfo {
-                    //     heading:Some("Hello Dioxus".into()),
-                    //     context:"hello world: <a href=\"https://dioxuslabs.com/\">Dioxus</a>".into(),
-                    //     allow_toast_close:true,
-                    //     position:dioxus_toast::Position::BottomLeft,
-                    //     icon: None,
-                    //     hide_after: Some(5),
-                    // });
                     let _id = toast.write().popup(ToastInfo::simple("hello world"));
                     println!("New Toast ID: {}", _id);
                 },
@@ -46,14 +36,16 @@ fn app(cx: Scope) -> Element {
             }
             button {
                 onclick: move |_| {
-                    let _id = toast.write().popup(ToastInfo {
-                        heading: Some("top-right".into()),
-                        context: "Top Right Toast".into(),
-                        allow_toast_close: true,
-                        position: dioxus_toast::Position::TopRight,
-                        icon: None,
-                        hide_after: None
-                    });
+                    let _id = toast
+                        .write()
+                        .popup(ToastInfo {
+                            heading: Some("top-right".into()),
+                            context: "Top Right Toast".into(),
+                            allow_toast_close: true,
+                            position: dioxus_toast::Position::TopRight,
+                            icon: None,
+                            hide_after: None,
+                        });
                 },
                 "Top Right"
             }
