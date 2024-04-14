@@ -160,14 +160,12 @@ pub struct ToastFrameProps {
 pub fn ToastFrame(props: ToastFrameProps) -> Element {
     let mut manager = props.manager;
 
-    let toast_list = &manager.read().list;
-
     let mut bottom_left_ele: Vec<Option<VNode>> = vec![];
     let mut bottom_right_ele: Vec<Option<VNode>> = vec![];
     let mut top_left_ele: Vec<Option<VNode>> = vec![];
     let mut top_right_ele: Vec<Option<VNode>> = vec![];
 
-    for (_, (id, item)) in toast_list.iter().enumerate() {
+    for (_, (id, item)) in manager.read().list.iter().enumerate() {
         let current_id = *id;
 
         let icon_class = if let Some(icon) = &item.info.icon {
