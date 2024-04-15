@@ -3,7 +3,6 @@
 mod id;
 
 use std::collections::BTreeMap;
-
 use dioxus::prelude::*;
 use id::ID;
 
@@ -33,8 +32,8 @@ impl ToastManager {
         let toast_id = self.id_manager.add();
 
         if self.list.len() >= self.maximum_toast.into() {
-            if let Some(result) = self.list.first_key_value() {
-                let id = *result.0;
+            if let Some((id, _)) = self.list.first_key_value() {
+                let id = *id;
                 println!("Deleted Toast ID: {:?}", id);
                 self.list.remove(&id);
             }
@@ -44,8 +43,7 @@ impl ToastManager {
             .hide_after
             .map(|duration| chrono::Local::now().timestamp() + duration as i64);
 
-        self.list
-            .insert(toast_id, ToastManagerItem { info, hide_after });
+        self.list.insert(toast_id, ToastManagerItem { info, hide_after });
 
         toast_id
     }
@@ -61,11 +59,7 @@ impl ToastManager {
 
 impl Default for ToastManager {
     fn default() -> Self {
-        Self {
-            list: Default::default(),
-            maximum_toast: 6,
-            id_manager: ID::new(),
-        }
+        Self::new(6)
     }
 }
 
