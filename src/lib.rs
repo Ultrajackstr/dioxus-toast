@@ -32,10 +32,8 @@ impl ToastManager {
         let toast_id = self.id_manager.add();
 
         if self.list.len() >= self.maximum_toast.into() {
-            if let Some((id, _)) = self.list.first_key_value() {
-                let id = *id;
+            if let Some((id, _)) = self.list.pop_first() {
                 println!("Deleted Toast ID: {:?}", id);
-                self.list.remove(&id);
             }
         }
 
@@ -90,59 +88,35 @@ pub struct ToastInfo {
 }
 
 impl ToastInfo {
-    pub fn simple(text: &str) -> Self {
+    fn new(text: &str, heading: Option<&str>, position: Position, icon: Option<Icon>) -> Self {
         Self {
-            heading: None,
+            heading: heading.map(String::from),
             context: text.to_string(),
             allow_toast_close: true,
-            position: Position::TopLeft,
-            icon: None,
+            position,
+            icon,
             hide_after: Some(6),
         }
+    }
+
+    pub fn simple(text: &str) -> Self {
+        Self::new(text, None, Position::BottomLeft, None)
     }
 
     pub fn success(text: &str, heading: &str) -> Self {
-        Self {
-            heading: Some(heading.to_string()),
-            context: text.to_string(),
-            allow_toast_close: true,
-            position: Position::BottomLeft,
-            icon: Some(Icon::Success),
-            hide_after: Some(6),
-        }
+        Self::new(text, Some(heading), Position::BottomLeft, Some(Icon::Success))
     }
 
     pub fn warning(text: &str, heading: &str) -> Self {
-        Self {
-            heading: Some(heading.to_string()),
-            context: text.to_string(),
-            allow_toast_close: true,
-            position: Position::BottomLeft,
-            icon: Some(Icon::Warning),
-            hide_after: Some(6),
-        }
+        Self::new(text, Some(heading), Position::BottomLeft, Some(Icon::Warning))
     }
 
     pub fn info(text: &str, heading: &str) -> Self {
-        Self {
-            heading: Some(heading.to_string()),
-            context: text.to_string(),
-            allow_toast_close: true,
-            position: Position::BottomLeft,
-            icon: Some(Icon::Info),
-            hide_after: Some(6),
-        }
+        Self::new(text, Some(heading), Position::BottomLeft, Some(Icon::Info))
     }
 
     pub fn error(text: &str, heading: &str) -> Self {
-        Self {
-            heading: Some(heading.to_string()),
-            context: text.to_string(),
-            allow_toast_close: true,
-            position: Position::BottomLeft,
-            icon: Some(Icon::Error),
-            hide_after: Some(6),
-        }
+        Self::new(text, Some(heading), Position::BottomLeft, Some(Icon::Error))
     }
 }
 
@@ -153,13 +127,25 @@ pub struct ToastFrameProps {
 
 pub fn ToastFrame(props: ToastFrameProps) -> Element {
     let mut manager = props.manager;
-
+    
+    use_future(move || {
+        async move {
+            loop {
+                let now = chrono::Local::now().timestamp();
+                manager.write().list.retain(|_, item| {
+                    item.hide_after.map_or(true, |hide_after| now < hide_after)
+                });
+                time_sleep(100).await;
+            }
+        }
+    });
+    
     let mut bottom_left_ele: Vec<Option<VNode>> = vec![];
     let mut bottom_right_ele: Vec<Option<VNode>> = vec![];
     let mut top_left_ele: Vec<Option<VNode>> = vec![];
     let mut top_right_ele: Vec<Option<VNode>> = vec![];
 
-    for (_, (id, item)) in manager.read().list.iter().enumerate() {
+    for (id, item) in manager.read().list.iter() {
         let current_id = *id;
 
         let icon_class = if let Some(icon) = &item.info.icon {
@@ -194,29 +180,14 @@ pub fn ToastFrame(props: ToastFrameProps) -> Element {
                 span { dangerous_inner_html: "{item.info.context}" }
             }
         };
-
-        if item.info.position == Position::BottomLeft {
-            bottom_left_ele.push(element);
-        } else if item.info.position == Position::BottomRight {
-            bottom_right_ele.push(element);
-        } else if item.info.position == Position::TopLeft {
-            top_left_ele.push(element);
-        } else if item.info.position == Position::TopRight {
-            top_right_ele.push(element);
+        
+        match item.info.position {
+            Position::BottomLeft => bottom_left_ele.push(element),
+            Position::BottomRight => bottom_right_ele.push(element),
+            Position::TopLeft => top_left_ele.push(element),
+            Position::TopRight => top_right_ele.push(element),
         }
     }
-
-    use_future(move || {
-        async move {
-            loop {
-                let now = chrono::Local::now().timestamp();
-                manager.write().list.retain(|_, item| {
-                    item.hide_after.map_or(true, |hide_after| now < hide_after)
-                });
-                time_sleep(100).await;
-            }
-        }
-    });
 
     rsx! {
         div { class: "toast-scope",
